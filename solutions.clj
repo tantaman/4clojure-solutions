@@ -640,3 +640,83 @@
 	      ))))
 	  ))
 )
+
+
+; Problem 60
+; Forbidden: reductions
+; Write a function which behaves like reduce,
+; but returns each intermediate value of the reduction. 
+; Your function must accept either two or three arguments, and the return sequence must be lazy.
+(problem[_]
+	(list
+		(= (take 5 (_ + (range))) [0 1 3 6 10])
+		(= (_ conj [1] [2 3 4]) [[1] [1 2] [1 2 3] [1 2 3 4]])
+		(= (last (_ * 2 [3 4 5])) (reduce * 2 [3 4 5]) 120)
+	)
+	(fn r 
+	  ([f init [x & xs]]
+	    (cons init (lazy-seq (when x (r f (f init x) xs))))
+	  )
+	  ([f coll]
+	    (r f (first coll) (rest coll))
+	  )
+	)
+)
+
+; Problem 61
+; Write a function which takes a vector of keys and a vector of values
+; and constructs a map from them.
+
+; Forbidden: zipmap
+(problem[_]
+	(list
+		(= (_ [:a :b :c] [1 2 3]) {:a 1, :b 2, :c 3})
+		(= (_ [1 2 3 4] ["one" "two" "three"]) {1 "one", 2 "two", 3 "three"})
+		(= (_ [:foo :bar] ["foo" "bar" "baz"]) {:foo "foo", :bar "bar"})
+	)
+	#(apply assoc {} (interleave %1 %2))
+)
+
+; Problem 62
+; Given a side-effect free function f and an initial value x write a function which returns 
+; an infinite lazy sequence of x, (f x), (f (f x)), (f (f (f x))), etc.
+
+; Forbidden: iterate
+(problem[_]
+	(list
+		(= (take 5 (_ #(* 2 %) 1)) [1 2 4 8 16])
+		(= (take 100 (_ inc 0)) (take 100 (range)))
+		(= (take 9 (_ #(inc (mod % 3)) 1)) (take 9 (cycle [1 2 3])))
+	)
+	(fn pow [f x] (cons x (lazy-seq (pow f (f x)))))
+)
+
+; Problem 63
+; Given a function f and a sequence s, write a function which returns a map. 
+; The keys should be the values of f applied to each item in s. 
+; The value at each key should be a vector of corresponding items in the order they appear 
+; in s.
+
+; Forbidden: group-by
+(problem[_]
+	(list
+		(= (_ #(> % 5) [1 3 6 8]) {false [1 3], true [6 8]})
+		(= (_ #(apply / %) [[1 2] [2 4] [4 6] [3 6]])
+   			{1/2 [[1 2] [2 4] [3 6]], 2/3 [[4 6]]})
+		(= (_ count [[1] [1 2] [3] [1 2 3] [2 3]])
+  		 {1 [[1] [3]], 2 [[1 2] [2 3]], 3 [[1 2 3]]})
+	)
+	#(reduce
+	  (fn [l r]
+		  (let [k (%1 r)]
+		  	; l is our map
+		  	; r is the current value in the array
+		  	; k is f(r) => key
+		  	; associate k to the existing item at k :: r
+		    (assoc l k (conj (get l k []) r))
+		  )
+	  ) 
+	  ; initialize l as a map {}
+	  ; pass in the array as r
+	  {} %2)
+)
