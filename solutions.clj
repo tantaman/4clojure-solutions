@@ -720,3 +720,65 @@
 	  ; pass in the array as r
 	  {} %2)
 )
+
+; Problem 64
+; solution: +
+
+; Problem 65
+; Clojure has many sequence types, which act in subtly different ways. 
+; The core functions typically convert them into a uniform "sequence" type and work with 
+; them that way, but it can be important to understand the behavioral and 
+; performance differences so that you know which kind is appropriate for your application.
+
+; Write a function which takes a collection and returns one of :map, :set, :list, or :vector - describing the type of collection it was given.
+; You won't be allowed to inspect their class or use the built-in predicates like list? - the point is to poke at them and understand their behavior.
+
+; Forbidden: class, type, Class, vector?, sequential?, list?, seq?, map?, set?, instance?, getClass
+(problem[_]
+	(list
+		(= :map (_ {:a 1, :b 2}))
+		(= :list (_ (range (rand-int 20))))
+		(= :vector (_ [1 2 3 4 5 6]))
+		(= :set (_ #{10 (rand-int 5)}))
+		(= [:map :set :vector :list] (map _ [{} #{} [] ()]))
+	)
+	(fn[coll]
+	  (let [obj (new Object)]
+	    (let [x (conj coll [1 2])]
+	      (cond
+	        (empty? (flatten x)) (if (associative? x) :map :set)
+	        (= (first (conj x obj)) obj) :list
+	        :else :vector
+	      )
+	)))
+)
+
+; Problem 66
+; Given two integers, write a function which returns the greatest common divisor.
+(problem[_]
+	(list
+		(= (_ 2 4) 2)
+		(= (_ 10 5) 5)
+		(= (_ 5 7) 1)
+		(= (_ 1023 858) 33)
+	)
+	(fn gcd[a b] 
+	  (if (= b 0)
+	    a
+	    (recur b (mod a b))
+	))
+)
+
+; Problem 67
+; Write a function which returns the first x number of prime numbers.
+(problem[_]
+	(list
+		(= (_ 2) [2 3])
+		(= (_ 5) [2 3 5 7 11])
+		(= (last (_ 100)) 541)
+	)
+	(fn [x]
+		(take x 
+	  		(for [r (drop 2 (range)) :when (= (some #(= (mod r %) 0) (range 2 r)) nil)] r))
+	)
+)
