@@ -782,3 +782,144 @@
 	  		(for [r (drop 2 (range)) :when (= (some #(= (mod r %) 0) (range 2 r)) nil)] r))
 	)
 )
+
+; Problem 68
+; Solution: [7 6 5 4 3]
+
+; Problem 69
+; Write a function which takes a function f and a variable number of maps. 
+; Your function should return a map that consists of the rest of the maps conj-ed onto the 
+; first. If a key occurs in more than one map, the mapping(s) from the 
+; latter (left-to-right) should be combined with the mapping in the result by 
+; calling (f val-in-result val-in-latter)
+; Forbidden: merge-with
+(problem[_]
+	(list
+		(= (_ * {:a 2, :b 3, :c 4} {:a 2} {:b 2} {:c 5})
+   			{:a 4, :b 6, :c 20})
+		(= (_ - {1 10, 2 20} {1 3, 2 10, 3 15})
+   			{1 7, 2 10, 3 15})
+		(= (_ concat {:a [3], :b [6]} {:a [4 5], :c [8 9]} {:b [7]})
+   			{:a [3 4 5], :b [6 7], :c [8 9]})
+	)
+	(fn [op & maps]
+	  (reduce (fn [l r] 
+	    (reduce (fn [l k]
+	      (let [lv (get l k)]
+	        (if (nil? lv)
+	          (assoc l k (r k))
+	          (assoc l k (op lv (r k)))
+	    ))) l (keys r))) maps
+	))
+)
+
+; Problem 70
+; Write a function that splits a sentence up into a sorted list of words.
+; Capitalization should not affect sort order and punctuation should be ignored.
+(problem[_]
+	(list
+		(= (_  "Have a nice day.")
+   			["a" "day" "Have" "nice"])
+		(= (_  "Clojure is a fun language!")
+   			["a" "Clojure" "fun" "is" "language"])
+		(= (_  "Fools fall for foolish follies.")
+   			["fall" "follies" "foolish" "Fools" "for"])
+	)
+	(fn [x] 
+	  (sort #(.compareTo (.toLowerCase %1) (.toLowerCase %2))
+	    (map #(clojure.string/replace %1 #"\.|\!" "")
+	    (clojure.string/split x #"\s+")))
+	)
+)
+
+; Problem 71
+; Solution: last
+
+; Problem 72
+; Solution: apply +
+
+; Problem 73
+; TODO: there has to be a general way to get the diagonal of a matrix....
+; A tic-tac-toe board is represented by a two dimensional vector. 
+; X is represented by :x, O is represented by :o, and empty is represented by :e. 
+; A player wins by placing three Xs or three Os in a horizontal, vertical, or diagonal row. 
+; Write a function which analyzes a tic-tac-toe board and returns :x if X has won, 
+; :o if O has won, and nil if neither player has won.
+(problem[_]
+	(list
+		(= nil (_ [[:e :e :e]
+            [:e :e :e]
+            [:e :e :e]]))
+		(= :x (_ [[:x :e :o]
+           [:x :e :e]
+           [:x :e :o]]))
+		(= :o (_ [[:e :x :e]
+           [:o :o :o]
+           [:x :e :x]]))
+		(= nil (_ [[:x :e :o]
+            [:x :x :e]
+            [:o :x :o]]))
+		(= :x (_ [[:x :e :e]
+           [:o :x :e]
+           [:o :e :x]]))
+		(= :o (_ [[:x :e :o]
+           [:x :o :e]
+           [:o :e :x]]))
+		(= nil (_ [[:x :o :x]
+            [:x :o :x]
+            [:o :x :o]]))
+	)
+	(fn [board] 
+	  (let [won?
+	    (fn [s] 
+	      (not (empty?
+	        (filter #(= (list s s s) %) 
+	          (concat board (vec (apply map vector board)) 
+	          (list (vector (get-in board [0 0]) (get-in board [1 1]) (get-in board [2 2])))
+	          (list (vector (get-in board [0 2]) (get-in board [1 1]) (get-in board [2 0])))
+	      ))))
+	    )]
+	    (cond
+	      (won? :x) :x
+	      (won? :o) :o
+	    )
+	))
+)
+
+; Problem 74
+; Given a string of comma separated integers, 
+; write a function which returns a new comma separated string that only
+; contains the numbers which are perfect squares.
+(problem[_]
+	(list
+		(= (_ "4,5,6,7,8,9") "4,9")
+		(= (_ "15,16,25,36,37") "16,25,36")
+	)
+	(fn [s] 
+	  (clojure.string/join "," (filter
+	    #(= (- (Math/sqrt (Integer/parseInt %)) (int (Math/sqrt (Integer/parseInt %)))) 0.0)
+	    (clojure.string/split s #",")))
+	)
+)
+
+; Problem 75
+(problem[_]
+	(list
+		(= (_ 1) 1)
+		(= (_ 10) (count '(1 3 7 9)) 4)
+		(= (_ 40) 16)
+		(= (_ 99) 60)
+	)
+	(fn [x]
+		(let [gcd 
+		    (fn [a b] 
+		      (if (= b 0)
+			      a
+			      (recur b (mod a b))
+			  ))]
+		  (count (for [n (range x) :when (= (gcd n x) 1)] n))
+	))
+)
+
+; Problem 76
+; Solution: [1 3 5 7 9 11]
