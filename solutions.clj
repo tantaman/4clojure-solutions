@@ -903,6 +903,10 @@
 )
 
 ; Problem 75
+; Two numbers are coprime if their greatest common divisor equals 1. 
+; Euler's totient function f(x) is defined as the number of positive integers less 
+; than x which are coprime to x. The special case f(1) equals 1. 
+; Write a function which calculates Euler's totient function.
 (problem[_]
 	(list
 		(= (_ 1) 1)
@@ -923,3 +927,96 @@
 
 ; Problem 76
 ; Solution: [1 3 5 7 9 11]
+
+; Problem 77
+; Write a function which finds all the anagrams in a vector of words. 
+; A word x is an anagram of word y if all the letters in x can be rearranged in a
+; different order to form y. 
+; Your function should return a set of sets, 
+; where each sub-set is a group of words which are anagrams of each other. 
+; Each sub-set should have at least two words. 
+; Words without any anagrams should not be included in the result.
+(problem[_]
+	(list
+		(= (_ ["meat" "mat" "team" "mate" "eat"])
+   			#{#{"meat" "team" "mate"}})
+		(= (_ ["veer" "lake" "item" "kale" "mite" "ever"])
+   			#{#{"veer" "ever"} #{"lake" "kale"} #{"mite" "item"}})
+	)
+	(fn [x] (set (map set (filter #(> (count %) 1) (vals (group-by frequencies x))))))
+)
+
+; Problem 78
+; Reimplement the function described in "Intro to Trampoline".
+; Forbidden: trampoline
+(problem[_]
+	(list
+		(= (letfn [(triple [x] #(sub-two (* 3 x)))
+	          (sub-two [x] #(stop?(- x 2)))
+	          (stop? [x] (if (> x 50) x #(triple x)))]
+	    	(_ triple 2))
+	  	82)
+	  	(= (letfn [(my-even? [x] (if (zero? x) true #(my-odd? (dec x))))
+		         (my-odd? [x] (if (zero? x) false #(my-even? (dec x))))]
+		    (map (partial _ my-even?) (range 6)))
+		  [true false true false true false])
+	)
+	(fn tramp
+	  ([x & args]
+	    (tramp (apply x args))
+	  )
+	  ([x]
+	    (if (fn? x)
+	      (recur (x))
+	      x
+	  ))
+	)
+)
+
+; Probelm 79
+; Write a function which calculates the sum of the minimal path through a triangle. 
+; The triangle is represented as a collection of vectors. 
+; The path should start at the top of the triangle and move to an adjacent number on the next row until the bottom of the triangle is reached.
+(problem[_]
+	(list
+		(= 7 (_ '([1]
+          [2 4]
+         [5 1 4]
+        [2 3 4 5]))) ; 1->2->1->3
+        (= 20 (_ '([3]
+           [2 4]
+          [1 9 3]
+         [9 9 2 4]
+        [4 6 6 7 8]
+       [5 7 3 5 1 4]))) ; 3->4->3->2->7->1
+	)
+	(fn [triangle]
+	  (let [mkpaths (fn mkpaths [triangle vert tpath]
+			(if (nil? (get-in triangle [(+ (first vert) 1) (last vert)]))
+				[(conj tpath (get-in triangle vert))]
+				(concat (mkpaths triangle [(+ (first vert) 1) (last vert)] (conj tpath (get-in triangle vert)))
+						(mkpaths triangle [(+ (first vert) 1) (+ (last vert) 1)] (conj tpath (get-in triangle vert))))
+			))]
+			(first (sort (map #(apply + %) (mkpaths (vec triangle) [0 0] []))))
+		)
+	)
+)
+
+; #(= (apply + (for [x (drop 1 (range %)) :when (= (mod % x) 0)] x)) %)
+
+; multi-mapping
+; (assoc map key (conj (get map key []) val))
+
+; Problem 80
+; A number is "perfect" if the sum of its divisors equal the number itself. 
+; 6 is a perfect number because 1+2+3=6. Write a function which returns true for perfect numbers and false otherwise.
+(problem[_]
+	(list
+		(= (_ 6) true)
+		(= (_ 7) false)
+		(= (_ 496) true)
+		(= (_ 500) false)
+		(= (_ 8128) true)
+	)
+	(fn [n] (= (apply + (for [x (drop 1 (range n)) :when (= (mod n x) 0)] x)) n))
+)
