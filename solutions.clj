@@ -1019,4 +1019,69 @@
 		(= (_ 8128) true)
 	)
 	(fn [n] (= (apply + (for [x (drop 1 (range n)) :when (= (mod n x) 0)] x)) n))
+	(fn [n] (= (apply + (filter #(= (mod n %) 0) (range 1 n))) n)) ; 4clojure.com hates list comprehensions for some reason...
+)
+
+; Problem 81
+; Write a function which returns the intersection of two sets. 
+; The intersection is the sub-set of items that each set has in common.
+; Forbidden: intersection
+(problem[_]
+	(list
+		(= (_ #{0 1 2 3} #{2 3 4 5}) #{2 3})
+		(= (_ #{0 1 2} #{3 4 5}) #{})
+		(= (_ #{:a :b :c :d} #{:c :e :a :f :d}) #{:a :c :d})
+	)
+	(fn [a b] (into #{} (filter #(contains? a %) b)))
+)
+
+
+; Problem 82
+(problem[_]
+	(list
+	)
+	(fn [words]
+		; The "Levenshtein Distance" algorithm for determining edit distance.
+		; I need to learn about memoization...
+	  (letfn [(ed-dist [a b] 
+	            (cond 
+	              (and (nil? a) (nil? b)) 0 
+	              (nil? b) (count a) 
+	              (nil? a) (count b)
+	              :else (let [ra (next a) rb (next b)] 
+	                      (if (= (first a) (first b)) 
+	                        (ed-dist ra rb) 
+	                        (+ (min 
+	                               (ed-dist ra rb) 
+	                               (ed-dist ra b) 
+	                               (ed-dist a rb)) 1)))))
+				(solve [graph visited source]
+					(let [to-visit (filter #(not (contains? visited %)) (graph source))]
+						(if (nil? (first to-visit))
+							(= (+ (count visited) 1) (count words))
+							(reduce #(or %1 %2) (map #(solve graph (conj visited source) %) to-visit))
+				)))]
+			(let [graph 
+				; A complicated way to create a map of {word => [words of edit distance 1 from word]}
+				(apply hash-map (mapcat identity (map #(vector % (filter (fn [w] (= (ed-dist % w) 1)) words)) words)))]
+				; Apply solve.  Try each different word as the root.  If any of them solve it when we are good to go.
+				; what's that function to return as soon as true is hit?  some?
+				(reduce #(or %1 %2) (map #(solve graph #{} %) words))
+	)))
+)
+
+; Problem 83
+; Write a function which takes a variable number of booleans. 
+; Your function should return true if some of the parameters are true, but not all of the parameters are true. 
+; Otherwise your function should return false.
+(problem[_]
+	(list
+		(= false (_ false false))
+		(= true (_ true false))
+		(= false (_ true))
+		(= true (_ false true false))
+		(= false (_ true true true))
+		(= true (_ true true true false))
+	)
+	(fn [& bools] (and (reduce #(or %1 %2) bools) (not (reduce #(and %1 %2) bools))))
 )
