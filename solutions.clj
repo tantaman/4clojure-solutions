@@ -1085,3 +1085,153 @@
 	)
 	(fn [& bools] (and (reduce #(or %1 %2) bools) (not (reduce #(and %1 %2) bools))))
 )
+
+; Problem 84 -- As it should be.
+; Write a function which generates the transitive closure of a binary relation.
+; The relation will be represented as a set of 2 item vectors.
+(problem[_]
+	(list
+		(let [divides #{[8 4] [9 3] [4 2] [27 9]}]
+  			(= (_ divides) #{[4 2] [8 4] [8 2] [9 3] [27 9] [27 3]}))
+		(let [more-legs
+		      #{["cat" "man"] ["man" "snake"] ["spider" "cat"]}]
+		  (= (_ more-legs)
+		     #{["cat" "man"] ["cat" "snake"] ["man" "snake"]
+		       ["spider" "cat"] ["spider" "man"] ["spider" "snake"]}))
+		(let [progeny
+		      #{["father" "son"] ["uncle" "cousin"] ["son" "grandson"]}]
+		  (= (_ progeny)
+		     #{["father" "son"] ["father" "grandson"]
+		       ["uncle" "cousin"] ["son" "grandson"]}))
+	)
+	; We want to associate a key to every value it can reach through transitivitiy.
+	; First we construct a map that associates each R[0] with every value it appears with.
+	; E.g., [8 4] [4 2]  ->  {8 5, 4 2}
+	; Then we traverse the map and add every value we can reach from a given key to our set of relations.
+	; E.g., Key 8 can reach value 4 and key 4 can reach value 2 in our map.  [8 4] and [8 2] are added
+	; to the set of relations
+	(fn [relations]
+		(letfn [(close [top source graph]
+				(cond
+					(nil? (graph source)) []
+					:else (concat (map #(vector top %) (graph source)) (map #(close top % graph) (graph source)))
+				)
+			)]
+		(let [graph (reduce #(assoc %1 (first %2) (conj (get %1 (first %2) #{}) (second %2))) {} relations)]
+			(into #{} (partition 2 (flatten (map #(close % % graph) (keys graph)))))
+		)
+	))
+)
+
+; Problem 84  -- IN REVERSE!! O OO O O SHIT!!
+; This takes the answer to problem 84 and returns the question.
+(problem[_]
+	(list
+		(let [divides #{[4 2] [8 4] [8 2] [9 3] [27 9] [27 3]}]
+  			(= (_ divides) #{[8 4] [9 3] [4 2] [27 9]}))
+		(let [more-legs
+		      #{["cat" "man"] ["cat" "snake"] ["man" "snake"]
+		       ["spider" "cat"] ["spider" "man"] ["spider" "snake"]}]
+		  (= (_ more-legs)
+		     #{["cat" "man"] ["man" "snake"] ["spider" "cat"]}))
+		(let [progeny
+		      #{["father" "son"] ["father" "grandson"]
+		       ["uncle" "cousin"] ["son" "grandson"]}]
+		  (= (_ progeny)
+		     #{["father" "son"] ["uncle" "cousin"] ["son" "grandson"]}))
+	)
+	; This reverses the process of 84 by finding and removing "consuming relations".  A "consuming relation" is a relation
+	; whose first and second values span one or more transitive relations.
+	; E.g.,
+	; ["cat" "snake"] is a consuming relation as "cat" -> "snake" spans two transitive relations.
+	; ["cat" "man"] ["man" "snake"]
+	(fn [relations]
+		(let [is-consuming 
+				(fn ic[relation graph visited source]
+					(cond
+						(contains? visited source) false
+						(nil? (graph source)) false
+						(= (count visited) (count (keys graph))) false
+						(and (not (= (first relation) source)) (contains? (graph source) (second relation))) true
+						:else (some #(= true (ic relation graph (conj visited source) %)) (graph source))
+				))
+			  graph
+			  	(reduce #(assoc %1 (first %2) (conj (get %1 (first %2) #{}) (second %2))) {} relations)]
+			(into #{} (remove #(is-consuming %1 graph #{} (first %1)) relations))
+		))
+)
+
+; Problem 85
+(fn [s]
+	; for every element in s: take every set in init, copy it and append an element from s to it.  Add the element from s to init as well.
+	; repeat until all sets from size 0 to size (count s) have been constructed.
+	; visually:
+	; {} -> {} {e} -> {} {e1} {e2} {e1e2} -> {} {e1} {e2} {e1e2} {e3} {e1e3} {e2e3} {e1e2e3} -> etc...
+  (reduce 
+    (fn [init e] 
+      (set (concat init (map #(conj % e) init) [#{e}])))
+    #{#{}} s))
+
+; Problem 86
+; Happy numbers are positive integers that follow a particular formula: take each individual digit, square it, and then sum the squares to get a new number.
+; Repeat with the new number and eventually, you might get to a number whose squared sum is 1. 
+; This is a happy number. An unhappy number (or sad number) is one that loops endlessly. 
+; Write a function that determines if a number is happy or not.
+(problem[_]
+	(list
+		(= (_ 7) true)
+		(= (_ 986543210) true)
+		(= (_ 2) false)
+		(= (_ 3) false)
+	)
+
+	; sol 1 
+	(fn [x]
+	  (letfn [(to-digits [n]
+	            (for [d (iterate #(* 10 %) 1) :while (<= d n)]
+	              (mod (int (/ n d)) 10)))
+	            (solve [n visited]
+	            	(let [newNum (reduce + (map #(* % %) (to-digits n)))]
+	            		(cond
+	            			(= 1 newNum) true
+	            			(contains? visited newNum) false
+	            			:else (recur newNum (conj visited newNum))
+	           )))]
+		(solve x #{x})
+	))
+
+	; sol 2 - http://yyhh.org/blog/2011/06/my-solutions-problems-no-76-100-4clojure-com
+	; I like the use of iterate instead of recur here.  How he knows 4 is the number every looping number comes to I do not know...
+	(fn [x]
+	  (letfn [(digits [n]
+	            (for [y (iterate (partial * 10) 1) :while (<= y n)]
+	              (rem (int (/ n y)) 10)))
+	          (sqr-sum [ds]
+	            (reduce + (map #(* % %) ds)))]
+	    (let [r (some #{1 4} (iterate (comp sqr-sum digits) x))]
+	      (cond
+	        (= 1 r) true
+	        (= 4 r) false))))
+)
+
+; Apparently 87 does not exist?
+
+; Problem 88
+(problem[_]
+	(list
+		(= (_ #{1 2 3 4 5 6} #{1 3 5 7}) #{2 4 6 7})
+		(= (_ #{:a :b :c} #{}) #{:a :b :c})
+		(= (_ #{} #{4 5 6}) #{4 5 6})
+		(= (_ #{[1 2] [2 3]} #{[2 3] [3 4]}) #{[1 2] [3 4]})
+	)
+	; sol 1
+	#(clojure.set/difference (clojure.set/union %1 %2) (clojure.set/intersection %1 %2))
+
+	; sol 2 - http://yyhh.org/blog/2011/06/my-solutions-problems-no-76-100-4clojure-com
+	; Interesting way to create difference, union and intersection via the core clojure functions:
+	; filter %1 %2 -> effectively does an intersection.  Retains items in %2 that are in %1
+	; int %1 %2 -> effectively a union.
+	; remove intersection union  -> removes items from union that are present in intersection.  This is a difference: union - intersection.
+	#(set (remove (set (filter %1 %2)) (into %1 %2)))
+)
+
